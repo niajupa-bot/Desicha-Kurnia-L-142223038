@@ -2,81 +2,62 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# --------------------------------------------------
+# ===========================================
 # Konfigurasi Halaman
-# --------------------------------------------------
+# ===========================================
 st.set_page_config(
     page_title="Dashboard Data Mining Pelanggan",
     page_icon="📊",
     layout="wide"
 )
 
-# --------------------------------------------------
-# Fungsi Rupiah
-# --------------------------------------------------
-def rupiah(x):
-    return f"Rp {x:,.0f}".replace(",", ".")
+st.title("📊 Dashboard Data Mining Pelanggan")
 
-# --------------------------------------------------
-# Load Data
-# --------------------------------------------------
+# ===========================================
+# Load Dataset
+# ===========================================
 @st.cache_data
 def load_data():
     df = pd.read_csv("Customers.csv")
     df.columns = df.columns.str.strip()
-
-    if "Jenis Kelamin" in df.columns:
-        df["Jenis Kelamin"] = df["Jenis Kelamin"].replace({
-            1: "Laki-laki",
-            2: "Perempuan"
-        })
-
     return df
 
 df = load_data()
 
-# --------------------------------------------------
+# ===========================================
 # Sidebar
-# --------------------------------------------------
-st.sidebar.title("📚 Menu")
-
-menu = st.sidebar.radio(
-    "Pilih Halaman",
+# ===========================================
+menu = st.sidebar.selectbox(
+    "Pilih Menu",
     [
         "Dashboard",
         "Dataset",
         "Statistik",
-        "Visualisasi",
-        "Kesimpulan"
+        "Visualisasi"
     ]
 )
 
-# ==================================================
-# DASHBOARD
-# ==================================================
+# ===========================================
+# Dashboard
+# ===========================================
 if menu == "Dashboard":
-
-    st.title("📊 Dashboard Data Mining Pelanggan")
 
     col1, col2, col3 = st.columns(3)
 
-    with col1:
-        st.metric(
-            "Jumlah Pelanggan",
-            len(df)
-        )
+    col1.metric(
+        "Jumlah Pelanggan",
+        len(df)
+    )
 
-    with col2:
-        st.metric(
-            "Total Pendapatan",
-            rupiah(df["Pendapatan"].sum())
-        )
+    col2.metric(
+        "Rata-rata Pendapatan",
+        f"${df['Annual Income ($)'].mean():.2f}"
+    )
 
-    with col3:
-        st.metric(
-            "Total Penjualan",
-            rupiah(df["Total"].sum())
-        )
+    col3.metric(
+        "Rata-rata Spending Score",
+        f"{df['Spending Score (1-100)'].mean():.2f}"
+    )
 
     st.markdown("---")
 
@@ -84,125 +65,97 @@ if menu == "Dashboard":
 
     st.dataframe(df.head())
 
-# ==================================================
-# DATASET
-# ==================================================
+# ===========================================
+# Dataset
+# ===========================================
 elif menu == "Dataset":
 
-    st.title("📋 Dataset")
+    st.subheader("Data Lengkap")
 
-    produk = st.selectbox(
-        "Filter Produk",
-        ["Semua"] + sorted(df["Produk"].unique())
+    gender = st.selectbox(
+        "Filter Gender",
+        ["Semua"] + list(df["Gender"].unique())
     )
 
-    if produk == "Semua":
+    if gender == "Semua":
         tampil = df
     else:
-        tampil = df[df["Produk"] == produk]
+        tampil = df[df["Gender"] == gender]
 
     st.dataframe(tampil)
 
-    csv = tampil.to_csv(index=False).encode("utf-8")
-
-    st.download_button(
-        "⬇ Download Dataset",
-        csv,
-        "Customers.csv",
-        "text/csv"
-    )
-
-# ==================================================
-# STATISTIK
-# ==================================================
+# ===========================================
+# Statistik
+# ===========================================
 elif menu == "Statistik":
 
-    st.title("📈 Statistik Deskriptif")
+    st.subheader("Informasi Dataset")
 
     st.write("Jumlah Baris :", df.shape[0])
+
     st.write("Jumlah Kolom :", df.shape[1])
 
     st.write("Nama Kolom")
 
     st.write(df.columns.tolist())
 
+    st.subheader("Statistik Deskriptif")
+
     st.dataframe(df.describe())
 
-# ==================================================
-# VISUALISASI
-# ==================================================
-elif menu == "Visualisasi":
+# ===========================================
+# Visualisasi
+# ===========================================
+else:
 
-    st.title("📉 Visualisasi Data")
+    st.subheader("Distribusi Gender")
 
-    # Histogram
-    st.subheader("Distribusi Pendapatan")
+    gender = df["Gender"].value_counts()
 
-    fig, ax = plt.subplots(figsize=(8,4))
+    st.bar_chart(gender)
 
-    ax.hist(df["Pendapatan"], bins=8)
+    st.subheader("Distribusi Umur")
 
-    ax.set_xlabel("Pendapatan")
+    fig, ax = plt.subplots()
+
+    ax.hist(df["Age"], bins=10)
+
+    ax.set_xlabel("Age")
 
     ax.set_ylabel("Jumlah")
 
     st.pyplot(fig)
 
-    # Produk
-    st.subheader("Jumlah Produk Terjual")
-
-    produk = df["Produk"].value_counts()
-
-    st.bar_chart(produk)
-
-    # Jenis Kelamin
-    st.subheader("Distribusi Jenis Kelamin")
-
-    gender = df["Jenis Kelamin"].value_counts()
-
-    st.bar_chart(gender)
-
-    # Kepuasan
-    st.subheader("Tingkat Kepuasan")
-
-    puas = df["Tingkat Kepuasan"].value_counts()
-
-    st.bar_chart(puas)
-
-    # Pie Chart Produk
-
-    st.subheader("Persentase Produk")
+    st.subheader("Distribusi Pendapatan Tahunan")
 
     fig2, ax2 = plt.subplots()
 
-    ax2.pie(
-        produk,
-        labels=produk.index,
-        autopct="%1.1f%%",
-        startangle=90
-    )
+    ax2.hist(df["Annual Income ($)"], bins=10)
 
-    ax2.axis("equal")
+    ax2.set_xlabel("Annual Income ($)")
 
     st.pyplot(fig2)
 
-# ==================================================
-# KESIMPULAN
-# ==================================================
-else:
+    st.subheader("Rata-rata Pendapatan Berdasarkan Gender")
 
-    st.title("📄 Kesimpulan")
+    income = df.groupby("Gender")["Annual Income ($)"].mean()
 
-    st.success(f"""
-Jumlah pelanggan sebanyak **{len(df)}** orang.
+    st.bar_chart(income)
 
-Total pendapatan pelanggan sebesar **{rupiah(df['Pendapatan'].sum())}**.
+    st.subheader("Rata-rata Spending Score Berdasarkan Gender")
 
-Total transaksi penjualan sebesar **{rupiah(df['Total'].sum())}**.
+    spending = df.groupby("Gender")["Spending Score (1-100)"].mean()
 
-Produk yang paling banyak dibeli adalah **{df['Produk'].mode()[0]}**.
+    st.bar_chart(spending)
 
-Rata-rata pendapatan pelanggan sebesar **{rupiah(df['Pendapatan'].mean())}**.
+    st.subheader("Distribusi Profesi")
 
-Dashboard ini menunjukkan distribusi pelanggan berdasarkan pendapatan, jenis kelamin, produk yang dibeli, serta tingkat kepuasan pelanggan sehingga dapat membantu proses analisis data dalam pengambilan keputusan.
-""")
+    profesi = df["Profession"].value_counts()
+
+    st.bar_chart(profesi)
+
+    st.subheader("Distribusi Family Size")
+
+    family = df["Family Size"].value_counts().sort_index()
+
+    st.bar_chart(family)

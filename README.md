@@ -17,3 +17,4 @@
 - Statistik deskriptif
 - Histogram pendapatan
 - Grafik kategori pelanggan
+- Pie chart 
